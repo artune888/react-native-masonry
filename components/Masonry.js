@@ -95,7 +95,7 @@ export default class Masonry extends Component {
 		}
 
 		// We use the existing data and only resolve what is needed
-		if (appendedData) {
+		if (!!brickDiff.length && appendedData) {
 			const offSet = this.props.bricks.length;
 			this.setState({
 				_uniqueCount
