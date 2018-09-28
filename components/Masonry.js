@@ -66,7 +66,7 @@ export default class Masonry extends Component {
 			_sortedData: [],
 			_resolvedData: [],
 			_columnHeights: columnHeights,
-			_uniqueCount: props.bricks.length
+			canTriggerOnEndReached: true,
 		};
 		// Assuming that rotation is binary (vertical|landscape)
 		Dimensions.addEventListener('change', (window) => this.setState(state => ({ initialOrientation: !state.initialOrientation })));
@@ -82,7 +82,6 @@ export default class Masonry extends Component {
 		// We use the difference in the passed in bricks to determine if user is appending or not
 		const brickDiff = differenceBy(nextProps.bricks, this.props.bricks, 'uri');
 		const appendedData = brickDiff.length !== nextProps.bricks.length;
-		const _uniqueCount = brickDiff.length + this.props.bricks.length;
 
 		// These intents would entail a complete re-render of the listview
 		if (differentColumns || differentPriority || !appendedData) {
@@ -90,16 +89,13 @@ export default class Masonry extends Component {
 				_sortedData: [],
 				_resolvedData: [],
 				_columnHeights: generateColumnHeights(nextProps.columns),
-				_uniqueCount
 			}), this.resolveBricks(nextProps));
 		}
 
 		// We use the existing data and only resolve what is needed
 		if (!!brickDiff.length && appendedData) {
 			const offSet = this.props.bricks.length;
-			this.setState({
-				_uniqueCount
-			}, this.resolveBricks({...nextProps, bricks: brickDiff}, offSet));
+			this.resolveBricks({...nextProps, bricks: brickDiff}, offSet);
 		}
 	}
 
@@ -110,6 +106,9 @@ export default class Masonry extends Component {
 				dataSource: state.dataSource.cloneWithRows([])
 			}));
 		}
+
+		this.setState({ canTriggerOnEndReached: false });
+		setTimeout(() => { this.setState({ canTriggerOnEndReached: true }) }, 1000)
 
 		// Sort bricks and place them into their respectable columns
 		// Issues arrise if state changes occur in the midst of a resolve
@@ -189,7 +188,7 @@ export default class Masonry extends Component {
 		const sortedLength = sortedData.reduce((acc, cv) => cv.length + acc, 0);
 		// Limit the invokes to only when the masonry has
 		// fully loaded all of the content to ensure user fully reaches the end
-		if (sortedLength === this.state._uniqueCount) {
+		if (this.state.canTriggerOnEndReached) {
 			this.props.onEndReached();
 		}
 	}
