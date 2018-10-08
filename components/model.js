@@ -1,14 +1,10 @@
-import { Image } from 'react-native';
-import Task from 'data.task';
-
-// resolveImage :: String -> Task(Error, Image)
 export const resolveImage = (data) => {
-	return new Task((reject, resolve) => Image.getSize(data.uri, (width, height) => resolve({
+	return {
 		...data,
 		//@TODO: Consider consolidating data.uri with dimensions to a image object
 		dimensions: {
-			width,
-			height
+			width: 400,
+			height: 300,
 		}
-	}), (err) => reject(err)));
+	};
 };

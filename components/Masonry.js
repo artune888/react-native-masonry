@@ -26,6 +26,14 @@ export const containMatchingUris = (r1, r2) => isEqual(r1.map(brick => brick.uri
 // generateColumnsHeight :: Number -> Array [...0]
 export const generateColumnHeights = count => Array(count).fill(0);
 
+export const getSortedDataSize = data => {
+	let size = 0
+	data.forEach(element => {
+		size += element.length;
+	});
+	return size;
+}
+
 export default class Masonry extends Component {
 	static propTypes = {
 		bricks: PropTypes.array,
@@ -61,7 +69,9 @@ export default class Masonry extends Component {
 		const columnHeights = generateColumnHeights(props.columns);
 		this.state = {
 			dataSource: this.ds.cloneWithRows([]),
+			totalCount: this.props.bricks.length,
 			dimensions: {},
+			dimensionSet: false,
 			initialOrientation: true,
 			_sortedData: [],
 			_resolvedData: [],
@@ -82,6 +92,8 @@ export default class Masonry extends Component {
 		// We use the difference in the passed in bricks to determine if user is appending or not
 		const brickDiff = differenceBy(nextProps.bricks, this.props.bricks, 'uri');
 		const appendedData = brickDiff.length !== nextProps.bricks.length;
+
+		this.setState({ totalCount: nextProps.bricks.length });
 
 		// These intents would entail a complete re-render of the listview
 		if (differentColumns || differentPriority || !appendedData) {
@@ -116,18 +128,17 @@ export default class Masonry extends Component {
 			.map((brick, index) => assignObjectColumn(columns, index, brick))
 			.map((brick, index) => assignObjectIndex(offSet + index, brick))
 			.map(brick => resolveImage(brick))
-			.map(resolveTask => resolveTask.fork(
-				(err) => console.warn('Image failed to load'),
-				(resolvedBrick) => {
+			.map((resolvedBrick) => {
 					this.setState(state => {
 						const sortedData = this._insertIntoColumn(resolvedBrick, state._sortedData);
+						const dataSource = getSortedDataSize(sortedData) === state.totalCount ? state.dataSource.cloneWithRows(sortedData) : state.dataSource;
 						return {
-							dataSource: state.dataSource.cloneWithRows(sortedData),
+							dataSource,
 							_sortedData: sortedData,
 							_resolvedData: [...state._resolvedData, resolvedBrick]
 						};
 					});
-				}));
+				});
 	}
 
 	_setParentDimensions(event) {
@@ -138,7 +149,8 @@ export default class Masonry extends Component {
 			dimensions: {
 				width,
 				height
-			}
+			},
+			dimensionSet: true,
 		});
 	}
 
@@ -196,26 +208,27 @@ export default class Masonry extends Component {
 	render() {
 		return (
 		<View style={{flex: 1}} onLayout={(event) => this._setParentDimensions(event)}>
-		<ListView
-			contentContainerStyle={styles.masonry__container}
-			dataSource={this.state.dataSource}
-			enableEmptySections
-			scrollRenderAheadDistance={100}
-			removeClippedSubviews={false}
-			onEndReached={this._delayCallEndReach}
-			onEndReachedThreshold={this.props.onEndReachedThreshold}
-			renderRow={(data, sectionId, rowID) => (
-			<Column
-				data={data}
-				columns={this.props.columns}
-				parentDimensions={this.state.dimensions}
-				imageContainerStyle={this.props.imageContainerStyle}
-				customImageComponent={this.props.customImageComponent}
-				customImageProps={this.props.customImageProps}
-				spacing={this.props.spacing}
-				key={`RN-MASONRY-COLUMN-${rowID}`} />
-			)}
-			refreshControl={this.props.refreshControl} />
+		{this.state.dimensionSet && (
+			<ListView
+				contentContainerStyle={styles.masonry__container}
+				dataSource={this.state.dataSource}
+				scrollRenderAheadDistance={100}
+				removeClippedSubviews={false}
+				onEndReached={this._delayCallEndReach}
+				onEndReachedThreshold={this.props.onEndReachedThreshold}
+				renderRow={(data, sectionId, rowID) => (
+				<Column
+					data={data}
+					columns={this.props.columns}
+					parentDimensions={this.state.dimensions}
+					imageContainerStyle={this.props.imageContainerStyle}
+					customImageComponent={this.props.customImageComponent}
+					customImageProps={this.props.customImageProps}
+					spacing={this.props.spacing}
+					key={`RN-MASONRY-COLUMN-${rowID}`} />
+				)}
+				refreshControl={this.props.refreshControl} />
+		)}
 		</View>
 		);
 	}
