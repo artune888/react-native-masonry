@@ -46,7 +46,8 @@ export default class Masonry extends Component {
 		priority: PropTypes.string,
 		refreshControl: PropTypes.element,
 		onEndReached: PropTypes.func,
-		onEndReachedThreshold: PropTypes.number
+		onEndReachedThreshold: PropTypes.number,
+		checkRowHasChanged: PropTypes.func
 	};
 
 	static defaultProps = {
@@ -64,7 +65,11 @@ export default class Masonry extends Component {
 	constructor(props) {
 		super(props);
 		// Assuming users don't want duplicated images, if this is not the case we can always change the diff check
-		this.ds = new ListView.DataSource({ rowHasChanged: (r1, r2) => !containMatchingUris(r1, r2) });
+		if (props.checkRowHasChanged) {
+			this.ds = new ListView.DataSource({ rowHasChanged: (r1, r2) => !props.checkRowHasChanged(r1, r2) });
+		} else {
+			this.ds = new ListView.DataSource({ rowHasChanged: (r1, r2) => !containMatchingUris(r1, r2) });
+		}
 		// This creates an array of [1..n] with values of 0, each index represent a column within the masonry
 		const columnHeights = generateColumnHeights(props.columns);
 		this.state = {
